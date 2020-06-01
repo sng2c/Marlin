@@ -59,19 +59,19 @@ Backlash backlash;
  * With a non-zero BACKLASH_SMOOTHING_MM value the backlash correction is
  * spread over multiple segments, smoothing out artifacts even more.
  */
-
+// da = X축변화량, ... dm = 방향값, 1이면 역방향이동
 void Backlash::add_correction_steps(const int32_t &da, const int32_t &db, const int32_t &dc, const uint8_t dm, block_t * const block) {
   static uint8_t last_direction_bits;
   uint8_t changed_dir = last_direction_bits ^ dm;
   // Ignore direction change if no steps are taken in that direction
-  if (da == 0) CBI(changed_dir, X_AXIS);
+  if (da == 0) CBI(changed_dir, X_AXIS); // x축 변화량이 0이면 해당 방향전환 비트를 0으로 설정
   if (db == 0) CBI(changed_dir, Y_AXIS);
   if (dc == 0) CBI(changed_dir, Z_AXIS);
-  last_direction_bits ^= changed_dir;
+  last_direction_bits ^= changed_dir; // 최근 방향비트에 toggle
 
-  if (correction == 0) return;
+  if (correction == 0) return; // 보정 비율이 0이면 무시 
 
-  #ifdef BACKLASH_SMOOTHING_MM
+  #ifdef BACKLASH_SMOOTHING_MM 
     // The segment proportion is a value greater than 0.0 indicating how much residual_error
     // is corrected for in this segment. The contribution is based on segment length and the
     // smoothing distance. Since the computation of this proportion involves a floating point
@@ -85,17 +85,17 @@ void Backlash::add_correction_steps(const int32_t &da, const int32_t &db, const 
     // No direction change, no correction.
     if (!changed_dir) return;
     // No leftover residual error from segment to segment
-    xyz_long_t residual_error{0};
+    xyz_long_t residual_error{0}; // 잔여 오차량
   #endif
 
-  const float f_corr = float(correction) / 255.0f;
+  const float f_corr = float(correction) / 255.0f; // 보정비율을 실수로 변환
 
   LOOP_XYZ(axis) { // x,y,z 축에 대해서 
     if (distance_mm[axis]) { // 백래시 거리가 있으면
-      const bool reversing = TEST(dm,axis);
+      const bool reversing = TEST(dm,axis); // 해당축의 리버스 이동 여부 
 
       // When an axis changes direction, add axis backlash to the residual error
-      if (TEST(changed_dir, axis))
+      if (TEST(changed_dir, axis)) // 방향 변경대상일 경우, 잔여오차량에 리버스 방향이면 빼고 아니면 더한다. step으로 변환
         residual_error[axis] += (reversing ? -f_corr : f_corr) * distance_mm[axis] * planner.settings.axis_steps_per_mm[axis];
 
       // Decide how much of the residual error to correct in this segment
@@ -115,7 +115,7 @@ void Backlash::add_correction_steps(const int32_t &da, const int32_t &db, const 
       #endif
       // Making a correction reduces the residual error and adds block steps
       if (error_correction) {
-        block->steps[axis] += ABS(error_correction);
+        block->steps[axis] += ABS(error_correction); // 스텝을 적용한다. 이미 모터회전 방향은 정해져있으니, 절대값을 더한다.
         residual_error[axis] -= error_correction;
       }
     }
