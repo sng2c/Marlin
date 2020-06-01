@@ -90,8 +90,8 @@ void Backlash::add_correction_steps(const int32_t &da, const int32_t &db, const 
 
   const float f_corr = float(correction) / 255.0f;
 
-  LOOP_XYZ(axis) {
-    if (distance_mm[axis]) {
+  LOOP_XYZ(axis) { // x,y,z 축에 대해서 
+    if (distance_mm[axis]) { // 백래시 거리가 있으면
       const bool reversing = TEST(dm,axis);
 
       // When an axis changes direction, add axis backlash to the residual error
